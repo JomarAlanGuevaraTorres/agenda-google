@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Agenda inteligente</title>
+  <style>
+    :root{color-scheme:light;--blue:#4f6df5;--dark:#263b9a;--bg:#eef1ff;--red:#c62828}
+    *{box-sizing:border-box} body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:var(--bg);color:#1f2937}
+    header{min-height:72px;padding:12px 18px;background:linear-gradient(135deg,var(--blue),var(--dark));color:white;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+    h1{font-size:1.1rem;margin:0}.sub{font-size:.84rem;opacity:.9;margin-top:2px}
+    #dictar{border:0;border-radius:22px;padding:13px 18px;background:white;color:var(--dark);font-size:1rem;font-weight:750;cursor:pointer;box-shadow:0 2px 8px #1c237755}
+    #dictar:disabled{opacity:.65;cursor:wait}#estado{max-width:860px;margin:12px auto 0;padding:0 14px;font-size:.92rem;min-height:1.4em}.error{color:var(--red)}
+    iframe{display:block;border:0;width:100%;height:calc(100vh - 122px);min-height:620px;background:white}
+  </style>
+</head>
+<body>
+  <header>
+    <div><h1>📅 Agenda inteligente</h1><div class="sub">Dicta desde aquí y guarda en tu agenda.</div></div>
+    <button id="dictar" type="button">🎙️ Dictar</button>
+  </header>
+  <div id="estado" aria-live="polite">Cargando agenda…</div>
+  <iframe id="agenda" title="Agenda inteligente" allow="clipboard-read; clipboard-write"></iframe>
+  <script>
+    const APP_URL = 'https://script.google.com/macros/s/AKfycbyE0BLGu-4ccujKhW7R19iBmO5ZOiW99ciI5QopqNMcLkrjI3wUb87qvKK9QykqFK9C/exec';
+    const ORIGENES_GOOGLE = new Set(['https://script.google.com','https://script.googleusercontent.com']);
+    const marco=document.getElementById('agenda'), boton=document.getElementById('dictar'), estado=document.getElementById('estado');
+    let destino=null, origenDestino=null;
+    marco.src=APP_URL;
+    function estadoTexto(texto,error){estado.textContent=texto;estado.className=error?'error':'';}
+    function enviar(tipo,datos){if(destino&&origenDestino)destino.postMessage(Object.assign({tipo:tipo},datos||{}),origenDestino);}
+    function terminar(){boton.disabled=false;boton.textContent='🎙️ Dictar';}
+    function errorVoz(err){terminar();const nombre=err&&err.name?err.name:'Error de voz',mensaje=err&&err.message?err.message:'';estadoTexto('No se pudo usar el micrófono: '+nombre+(mensaje?' — '+mensaje:''),true);enviar('agenda-voz-error',{nombre:nombre,mensaje:mensaje});}
+    function iniciarDictado(){
+      const Reconocimiento=window.SpeechRecognition||window.webkitSpeechRecognition;
+      if(!window.isSecureContext){errorVoz({name:'SecurityError',message:'Esta página debe publicarse por HTTPS.'});return;}
+      if(!Reconocimiento||!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){errorVoz({name:'No compatible',message:'Abre la página en Chrome o Safari.'});return;}
+      boton.disabled=true;boton.textContent='Solicitando permiso…';estadoTexto('Cuando el navegador lo pida, pulsa “Permitir”.');
+      navigator.mediaDevices.getUserMedia({audio:true}).then(function(stream){
+        stream.getTracks().forEach(function(track){track.stop();});
+        const reconocimiento=new Reconocimiento();reconocimiento.lang='es-ES';reconocimiento.continuous=false;reconocimiento.interimResults=false;
+        reconocimiento.onstart=function(){boton.textContent='Escuchando…';estadoTexto('Habla con normalidad.');};
+        reconocimiento.onresult=function(event){let texto='';for(let i=event.resultIndex;i<event.results.length;i++){if(event.results[i].isFinal)texto+=event.results[i][0].transcript+' ';}if(texto.trim()){enviar('agenda-voz-resultado',{texto:texto.trim()});estadoTexto('✓ Dictado enviado a la agenda.');}};
+        reconocimiento.onerror=function(event){errorVoz({name:event.error,message:'El reconocimiento de voz no pudo completarse.'});};
+        reconocimiento.onend=terminar;try{reconocimiento.start();}catch(err){errorVoz(err);}
+      }).catch(errorVoz);
+    }
+    boton.addEventListener('click',iniciarDictado);
+    window.addEventListener('message',function(event){const data=event.data||{};if(!ORIGENES_GOOGLE.has(event.origin)||data.tipo!=='agenda-voz-puente-listo')return;destino=event.source;origenDestino=event.origin;enviar('agenda-voz-puente-conectado');estadoTexto('Agenda lista. Pulsa “🎙️ Dictar” para comenzar.');});
+    marco.addEventListener('load',function(){if(!destino)estadoTexto('Cargando la agenda…');});
+  </script>
+</body>
+</html>

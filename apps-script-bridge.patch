@@ -1,0 +1,62 @@
+diff --git a/Code.gs b/Code.gs
+index 42f8420..27e90d7 100644
+--- a/Code.gs
++++ b/Code.gs
+@@ -18,7 +18,8 @@
+ function doGet() {
+   return HtmlService.createHtmlOutputFromFile('Index')
+     .setTitle('Agenda Inteligente de Clientes')
+-    .addMetaTag('viewport', 'width=device-width, initial-scale=1, maximum-scale=1');
++    .addMetaTag('viewport', 'width=device-width, initial-scale=1, maximum-scale=1')
++    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+ }
+ 
+ /* ============ CONFIGURACIÓN DE LA HOJA ============ */
+diff --git a/Index.html b/Index.html
+index 5eaa7c0..71bd9aa 100644
+--- a/Index.html
++++ b/Index.html
+@@ -141,6 +141,7 @@
+     var filtro = 'todas';
+     var reconocimiento = null;
+     var escuchando = false;
++    var puenteVozActivo = false;
+ 
+     function $(id){return document.getElementById(id);}
+     function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(m){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m];});}
+@@ -253,6 +254,23 @@
+ 
+     // ------- Voz -------
+     var SRentrada = window.SpeechRecognition||window.webkitSpeechRecognition;
++    window.addEventListener('message',function(event){
++      if(event.source!==window.top) return;
++      var data=event.data||{};
++      if(data.tipo==='agenda-voz-puente-conectado'){
++        puenteVozActivo=true;
++      }else if(data.tipo==='agenda-voz-resultado'){
++        if(typeof data.texto==='string'&&data.texto.trim()){
++          $('txt').value=data.texto.trim();
++          $('vstatus').textContent='✓ Dictado recibido. Revisa el texto y pulsa “Interpretar / guardar”.';
++          $('vstatus').classList.remove('hidden');
++        }
++        idle();
++      }else if(data.tipo==='agenda-voz-error'){
++        mostrarErrorPermiso({name:data.nombre||'Error de voz',message:data.mensaje||''});
++      }
++    });
++    if(window.top!==window.self) window.top.postMessage({tipo:'agenda-voz-puente-listo'},'*');
+ 
+     function initVoz(){
+       if(!SRentrada){
+@@ -289,6 +307,11 @@
+     $('mic').addEventListener('click',function(){
+       if(!SRentrada) return;
+       if(escuchando){try{reconocimiento.stop();}catch(e){}idle();return;}
++      if(puenteVozActivo){
++        $('vstatus').textContent='Para dictar usa el botón “🎙️ Dictar” de la barra superior.';
++        $('vstatus').classList.remove('hidden');
++        return;
++      }
+       $('mic').classList.add('listening');
+       $('micLabel').textContent='Solicitando acceso al micrófono...';
+       $('vstatus').textContent='🎙️ Cuando el navegador lo pida, pulsa "Permitir".';

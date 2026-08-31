@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <base target="_top">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <style>
+    :root{--bg:#eef1ff;--card:#fff;--primary:#4f6df5;--primary-dark:#3b4fd8;
+      --danger:#e74c3c;--ok:#2ecc71;--text:#1f2937;--muted:#6b7280;--border:#e5e7eb;
+      --urgent:#ff5a5f;--warning:#ffb020;--safe:#2ecc71;}
+    *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+    body{font-family:-apple-system,'Segoe UI',Roboto,system-ui,sans-serif;background:var(--bg);
+      color:var(--text);overscroll-behavior-y:contain;}
+    header{background:linear-gradient(135deg,var(--primary),var(--primary-dark));color:#fff;
+      padding:20px 16px;display:flex;align-items:center;justify-content:space-between;}
+    header h1{font-size:1.3rem;} .badge{background:rgba(255,255,255,.25);padding:4px 12px;border-radius:20px;font-weight:700;}
+    main{padding:16px;max-width:520px;margin:0 auto;display:flex;flex-direction:column;gap:16px;}
+    .card{background:var(--card);border-radius:16px;box-shadow:0 2px 12px rgba(0,0,0,.08);padding:16px;}
+    .card h2{font-size:1.05rem;margin-bottom:12px;color:var(--primary-dark);}
+    .big-mic{width:100%;display:flex;align-items:center;justify-content:center;gap:12px;
+      background:var(--primary);color:#fff;border:none;border-radius:24px;padding:22px;
+      font-size:1.2rem;font-weight:700;cursor:pointer;min-height:76px;box-shadow:0 6px 20px rgba(79,109,245,.4);}
+    .big-mic .mic-icon{font-size:2rem;}
+    .big-mic.listening{background:var(--danger);animation:pulse 1.3s infinite;}
+    .status{margin-top:10px;background:#eef2ff;border-left:4px solid var(--primary);padding:12px;border-radius:8px;}
+    .hidden{display:none!important;}
+    textarea{width:100%;padding:14px;border-radius:12px;border:1.5px solid var(--border);
+      font-size:1rem;resize:vertical;font-family:inherit;background:#fafbff;}
+    .row{display:flex;gap:10px;margin-top:10px;}
+    .row label{display:flex;flex-direction:column;gap:5px;flex:1;font-size:.85rem;font-weight:600;}
+    input[type=date],select{padding:11px;border-radius:10px;border:1.5px solid var(--border);font-size:1rem;width:100%;background:#fafbff;}
+    .primary-btn{background:var(--primary);color:#fff;border:none;border-radius:14px;padding:15px;
+      font-size:1.05rem;font-weight:700;cursor:pointer;width:100%;margin-top:10px;}
+    .primary-btn:active{background:var(--primary-dark);}
+    .ghost-btn{background:#fff;color:var(--primary-dark);border:1.5px solid var(--primary);
+      border-radius:12px;padding:12px;font-size:.95rem;font-weight:600;cursor:pointer;flex:1;}
+    .danger-btn{background:var(--danger);color:#fff;border:none;border-radius:12px;padding:12px;font-size:.95rem;cursor:pointer;}
+    .hint{margin-top:10px;font-size:.8rem;color:var(--muted);}
+    /* Preview */
+    .pv-row{display:flex;align-items:center;gap:12px;background:#f9fafb;border:1px solid var(--border);
+      border-radius:10px;padding:10px;margin-bottom:8px;}
+    .pv-ico{font-size:1.3rem;} .pv-field{flex:1;}
+    .pv-field label{font-size:.72rem;color:var(--muted);font-weight:600;text-transform:uppercase;}
+    .pv-value{font-weight:700;font-size:1rem;}
+    /* Prioridades */
+    .prio{display:flex;align-items:center;gap:10px;padding:12px;border-radius:12px;border:1px solid var(--border);
+      border-left:6px solid var(--muted);background:#fff;margin-bottom:8px;}
+    .prio.urgent{border-left-color:var(--urgent);background:#fff4f4;}
+    .prio.warning{border-left-color:var(--warning);background:#fffaf0;}
+    .prio.soon{border-left-color:var(--safe);background:#f0fbf4;}
+    .plbl{font-size:.7rem;font-weight:800;padding:3px 8px;border-radius:20px;color:#fff;white-space:nowrap;}
+    .urgent .plbl{background:var(--urgent);} .warning .plbl{background:var(--warning);} .soon .plbl{background:var(--safe);}
+    .pinfo{flex:1;min-width:0;} .pname{font-weight:700;font-size:.95rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    .pmeta{font-size:.78rem;color:var(--muted);}
+    .when{font-size:.8rem;font-weight:800;white-space:nowrap;}
+    /* Lista */
+    .item{display:flex;gap:10px;padding:12px;border-radius:12px;border:1px solid var(--border);
+      background:#fff;margin-bottom:10px;flex-direction:column;}
+    .item-head{display:flex;align-items:center;gap:12px;}
+    .ico{font-size:1.5rem;} .body{flex:1;min-width:0;}
+    .name{font-weight:700;} .meta{font-size:.78rem;color:var(--muted);}
+    .gestion{font-size:.82rem;color:var(--primary-dark);background:#eef2ff;border-radius:8px;padding:6px 10px;margin-top:8px;}
+    .comentario{font-size:.82rem;background:#f5f5f5;border-radius:8px;padding:6px 10px;margin-top:6px;white-space:pre-wrap;}
+    .acciones{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;}
+    .acciones button{border:none;border-radius:10px;padding:8px 12px;font-size:.85rem;font-weight:600;cursor:pointer;}
+    .acciones .ok{background:var(--ok);color:#fff;} .acciones .del{background:#fdebec;color:var(--danger);}
+    .acciones .snooze{background:#fff0d4;color:#b26a00;} .acciones .cmt{background:#eef2ff;color:var(--primary-dark);}
+    .filters{display:flex;gap:6px;margin-top:6px;}
+    .fbtn{padding:8px 13px;border-radius:20px;border:1px solid var(--border);background:#fff;cursor:pointer;font-size:.85rem;}
+    .fbtn.active{background:var(--primary);color:#fff;border-color:var(--primary);}
+    .empty{text-align:center;color:var(--muted);padding:24px 0;}
+    .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(80px);
+      background:var(--text);color:#fff;padding:13px 20px;border-radius:12px;font-size:.95rem;z-index:100;
+      transition:transform .25s;max-width:90%;text-align:center;}
+    .toast.show{transform:translateX(-50%) translateY(0);}
+    h3.titulo-prev{font-size:.9rem;margin-bottom:8px;color:var(--primary-dark);}
+    .snooze-options{display:grid;grid-template-columns:repeat(auto-fit,minmax(90px,1fr));gap:8px;margin-top:8px;}
+    .snooze-options button{background:#eef2ff;border:1px solid var(--primary);border-radius:10px;padding:10px;font-weight:600;cursor:pointer;}
+    @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(231,76,60,.45);}50%{box-shadow:0 0 0 14px rgba(231,76,60,0);}}
+    @media(min-width:600px){main{max-width:560px;}}
+  </style>
+</head>
+<body>
+  <header>
+    <h1>📅 Agenda Inteligente</h1>
+    <span class="badge" id="badge">0</span>
+  </header>
+
+  <main>
+    <button class="big-mic" id="mic">
+      <span class="mic-icon">🎙️</span>
+      <span id="micLabel">Pulsa y dicta tu visita</span>
+    </button>
+    <div id="vstatus" class="status hidden"></div>
+
+    <!-- Preview IA -->
+    <div id="previewCard" class="card hidden">
+      <h2>🤖 Interpretado automáticamente</h2>
+      <div id="pvrows"></div>
+      <button class="primary-btn" id="pvSave">✓ Guardar en agenda y calendario</button>
+      <button class="ghost-btn" id="pvCancel" style="margin-top:8px">Descartar / editar</button>
+    </div>
+
+    <!-- Manual -->
+    <div class="card">
+      <h2>✏️ Editar / agregar manual</h2>
+      <textarea id="txt" rows="2" placeholder="Ej: visitar a María Pérez el viernes a las 4, tel 999 123 456"></textarea>
+      <div class="row">
+        <label>Fecha<input type="date" id="fecha"></label>
+        <label>Tipo<select id="tipo"><option value="visita">🚗 Visita</option><option value="llamada">📞 Llamada</option></select></label>
+      </div>
+      <button class="primary-btn" id="add">➕ Interpretar / guardar</button>
+      <p class="hint">💡 Automático: <em>"llamar a Carlos el lunes"</em>, <em>"visitar a Ana el 15 de septiembre"</em>, <em>"ver a Juan mañana a las 5"</em>.</p>
+    </div>
+
+    <!-- Prioridades -->
+    <div class="card">
+      <h2>🔔 Prioridades (por fecha)</h2>
+      <div id="prios"></div>
+    </div>
+
+    <!-- Lista -->
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+        <h2 style="margin-bottom:0">📋 Actividades</h2>
+        <div class="filters">
+          <button class="fbtn active" data-f="todas">Todas</button>
+          <button class="fbtn" data-f="visita">Visitas</button>
+          <button class="fbtn" data-f="llamada">Llamadas</button>
+        </div>
+      </div>
+      <div id="lista" style="margin-top:12px"></div>
+    </div>
+  </main>
+
+  <div id="toast" class="toast"></div>
+
+  <script>
+    var datos = [];
+    var pending = null;
+    var filtro = 'todas';
+    var reconocimiento = null;
+    var escuchando = false;
+    var puenteVozActivo = false;
+
+    function $(id){return document.getElementById(id);}
+    function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(m){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m];});}
+    function toast(msg){var t=$('toast');t.textContent=msg;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(function(){t.classList.remove('show');},2400);}
+
+    function cargar(){
+      google.script.run
+        .withSuccessHandler(function(d){datos=Array.isArray(d)?d:[];render();})
+        .withFailureHandler(function(err){
+          var msg=(err&&err.message)?err.message:String(err);
+          $('prios').innerHTML='<p class="empty" style="color:#c0392b">⚠️ Error del servidor:<br>'+esc(msg)+'<br><br>Revisa que el SPREADSHEET_ID en Code.gs sea correcto.</p>';
+          $('lista').innerHTML='';
+        })
+        .getTodas();
+    }
+
+    function render(){
+      datos = Array.isArray(datos) ? datos : [];
+      var badge=$('badge');
+      if(badge) badge.textContent=datos.filter(function(t){return (t.estado||'Pendiente')!=='Completado';}).length;
+      renderPrios(); renderLista();
+    }
+
+    function diasA(item){var f=new Date(item.fecha);return Math.round((f - (function(){var h=new Date();h.setHours(0,0,0,0);return h;})())/86400000);}
+    function diaLbl(d){if(d==null||isNaN(d))return 'Sin fecha';if(d<0)return 'Vencida '+Math.abs(d)+'d';if(d===0)return '¡HOY!';if(d===1)return 'Mañana';return 'En '+d+' días';}
+    function prioCls(d){if(isNaN(d))return '';if(d<=2)return 'urgent';if(d<=7)return 'warning';return 'soon';}
+    function prioLbl(d){if(isNaN(d))return 'SIN FECHA';if(d<0)return 'VENCIDA';if(d===0)return 'HOY';if(d===1)return 'MAÑANA';if(d<=7)return 'PRONTO';return 'PROGRAMADA';}
+    function fmtFechaLarga(iso){if(!iso)return 'Sin fecha';try{var d=new Date(iso);return d.toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long'});}catch(e){return iso;}}
+
+    function renderPrios(){
+      var box=$('prios');
+      datos=Array.isArray(datos)?datos:[];
+      var act=datos.filter(function(t){return (t.estado||'Pendiente')!=='Completado';});
+      if(!act.length){box.innerHTML='<p class="empty">No hay pendientes. 🎙️ Dicta una visita.</p>';return;}
+      act.sort(function(a,b){return diasA(a)-diasA(b);});
+      box.innerHTML='';
+      act.forEach(function(t){
+        var d=diasA(t);
+        var el=document.createElement('div');
+        el.className='prio '+prioCls(d);
+        el.innerHTML='<span class="plbl">'+prioLbl(d)+'</span>'+
+          '<span class="pinfo"><div class="pname">'+(t.tipo==='llamada'?'📞':'🚗')+' '+esc(t.nombre)+'</div>'+
+          '<div class="pmeta">'+fmtFechaLarga(t.fecha)+(t.hora?' · '+esc(t.hora):'')+(t.telefono?' · 📱'+esc(t.telefono):'')+'</div></span>'+
+          '<span class="when">'+diaLbl(d)+'</span>';
+        box.appendChild(el);
+      });
+    }
+
+    function renderLista(){
+      var box=$('lista');
+      datos=Array.isArray(datos)?datos:[];
+      var list=datos.slice();
+      if(filtro!=='todas')list=list.filter(function(t){return t.tipo===filtro;});
+      list.sort(function(a,b){return diasA(a)-diasA(b);});
+      if(!list.length){box.innerHTML='<p class="empty">Sin actividades aquí.</p>';return;}
+      box.innerHTML='';
+      list.forEach(function(t){
+        var done=(t.estado||'Pendiente')==='Completado';
+        var el=document.createElement('div');
+        el.className='item';
+        el.innerHTML='<div class="item-head">'+
+          '<span class="ico">'+(done?'✅':(t.tipo==='llamada'?'📞':'🚗'))+'</span>'+
+          '<div class="body"><div class="name">'+esc(t.nombre)+'</div>'+
+          '<div class="meta">'+(t.tipo==='llamada'?'Llamada':'Visita')+' · '+fmtFechaLarga(t.fecha)+(t.hora?' · '+esc(t.hora):'')+(t.telefono?' · 📱'+esc(t.telefono):'')+(t.direccion?' · 🏠 '+esc(t.direccion):'')+'</div></div></div>'+
+          (t.gestion?'<div class="gestion">📌 '+esc(t.gestion)+'</div>':'')+
+          (t.comentario?'<div class="comentario">💬 '+esc(t.comentario)+'</div>':'')+
+          '<div class="acciones">'+
+            (done?'':'<button class="ok" data-act="done">✔ Hecho</button>')+
+            '<button class="snooze" data-act="snooze">⏰ Posponer</button>'+
+            '<button class="cmt" data-act="cmt">💬 Comentario</button>'+
+            '<button class="cmt" data-act="rev">🔁 Revisar luego</button>'+
+            '<button class="del" data-act="del">🗑</button>'+
+          '</div>'+
+          '<div class="snooze-box hidden"></div>'+
+          '<div class="cmt-box hidden"></div>';
+        var self=el;
+        el.querySelectorAll('.acciones button').forEach(function(btn){
+          btn.addEventListener('click',function(){accion(t,btn.dataset.act,self);});
+        });
+        box.appendChild(el);
+      });
+    }
+
+    function accion(t,act,el){
+      if(act==='done'){
+        google.script.run.withSuccessHandler(function(d){datos=d;render();toast('✓ '+t.nombre+' completado');}).completar(t.id);
+      }else if(act==='del'){
+        if(confirm('¿Eliminar a '+t.nombre+'?'))google.script.run.withSuccessHandler(function(d){datos=d;render();toast('Eliminado');}).eliminar(t.id);
+      }else if(act==='snooze'){
+        var box=el.querySelector('.snooze-box');
+        box.classList.toggle('hidden');
+        if(box.innerHTML==='')box.innerHTML='<h3 class="titulo-prev">⏰ Posponer a:</h3><div class="snooze-options">'+
+          '<button id="s1">+1 día</button><button id="s3">+3 días</button><button id="s7">+1 semana</button></div>';
+        box.querySelector('#s1').onclick=function(){google.script.run.withSuccessHandler(function(d){datos=d;render();toast('Pospuesta +1 día');}).posponer(t.id,1);};
+        box.querySelector('#s3').onclick=function(){google.script.run.withSuccessHandler(function(d){datos=d;render();toast('Pospuesta +3 días');}).posponer(t.id,3);};
+        box.querySelector('#s7').onclick=function(){google.script.run.withSuccessHandler(function(d){datos=d;render();toast('Pospuesta +1 semana');}).posponer(t.id,7);};
+      }else if(act==='cmt'){
+        var cbox=el.querySelector('.cmt-box');
+        cbox.classList.toggle('hidden');
+        if(cbox.innerHTML==='')cbox.innerHTML='<textarea class="cmt-input" rows="2" placeholder="Anota algo..."></textarea><button class="primary-btn cmt-save">Guardar comentario</button>';
+        cbox.querySelector('.cmt-save').onclick=function(){
+          var val=cbox.querySelector('.cmt-input').value;
+          if(!val){toast('Escribe algo');return;}
+          google.script.run.withSuccessHandler(function(d){datos=d;render();toast('Comentario guardado');}).comentar(t.id,val);
+        };
+      }else if(act==='rev'){
+        google.script.run.withSuccessHandler(function(d){datos=d;render();toast('🔁 Marcado: revisar luego');}).gestionar(t.id,'Revisar más adelante');
+      }
+    }
+
+    // ------- Voz -------
+    var SRentrada = window.SpeechRecognition||window.webkitSpeechRecognition;
+    window.addEventListener('message',function(event){
+      if(event.source!==window.top) return;
+      var data=event.data||{};
+      if(data.tipo==='agenda-voz-puente-conectado'){
+        puenteVozActivo=true;
+      }else if(data.tipo==='agenda-voz-resultado'){
+        if(typeof data.texto==='string'&&data.texto.trim()){
+          $('txt').value=data.texto.trim();
+          $('vstatus').textContent='✓ Dictado recibido. Revisa el texto y pulsa “Interpretar / guardar”.';
+          $('vstatus').classList.remove('hidden');
+        }
+        idle();
+      }else if(data.tipo==='agenda-voz-error'){
+        mostrarErrorPermiso({name:data.nombre||'Error de voz',message:data.mensaje||''});
+      }
+    });
+    if(window.top!==window.self) window.top.postMessage({tipo:'agenda-voz-puente-listo'},'*');
+
+    function initVoz(){
+      if(!SRentrada){
+        $('mic').disabled=true;
+        $('micLabel').textContent='Voz no soportada en este navegador';
+        $('vstatus').textContent='Este navegador NO soporta reconocimiento de voz. Usa Chrome (PC/Android) o Safari (iPhone). En PC, Firefox no funciona.';
+        $('vstatus').classList.remove('hidden');
+        return;
+      }
+      $('micLabel').textContent='Pulsa y dicta tu visita';
+    }
+
+    function mostrarErrorPermiso(err){
+      idle();
+      var motivo=err&&err.name?err.name:'Error desconocido';
+      if(motivo==='NotAllowedError'||motivo==='SecurityError'){
+        $('vstatus').textContent='🚫 El navegador bloqueó el micrófono. Permítelo en el candado de la barra de direcciones. Si la app sigue dentro de un panel de Google, ábrela desde una página HTTPS que permita el micrófono.';
+      }else if(motivo==='NotFoundError'){
+        $('vstatus').textContent='No encontré un micrófono disponible en este dispositivo.';
+      }else{
+        $('vstatus').textContent='No se pudo acceder al micrófono: '+motivo+(err&&err.message?' - '+err.message:'');
+      }
+      $('vstatus').classList.remove('hidden');
+    }
+
+    function iniciarReconocimiento(){
+      try {
+        reconocimiento.start();
+      } catch(err) {
+        mostrarErrorPermiso(err);
+      }
+    }
+
+    $('mic').addEventListener('click',function(){
+      if(!SRentrada) return;
+      if(escuchando){try{reconocimiento.stop();}catch(e){}idle();return;}
+      if(puenteVozActivo){
+        $('vstatus').textContent='Para dictar usa el botón “🎙️ Dictar” de la barra superior.';
+        $('vstatus').classList.remove('hidden');
+        return;
+      }
+      $('mic').classList.add('listening');
+      $('micLabel').textContent='Solicitando acceso al micrófono...';
+      $('vstatus').textContent='🎙️ Cuando el navegador lo pida, pulsa "Permitir".';
+      $('vstatus').classList.remove('hidden');
+      escuchando=true;
+
+      // Pedir el permiso explícitamente durante el clic. SpeechRecognition por sí
+      // solo no siempre muestra el aviso del navegador, especialmente en iframes.
+      if(!window.isSecureContext){
+        mostrarErrorPermiso({name:'SecurityError',message:'La página no está en un contexto seguro (HTTPS).'});
+        return;
+      }
+      if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){
+        // Compatibilidad: algunos navegadores exponen SpeechRecognition sin MediaDevices.
+        iniciarReconocimiento();
+        return;
+      }
+      navigator.mediaDevices.getUserMedia({audio:true}).then(function(stream){
+        // Solo se usa para obtener el permiso; el reconocimiento gestiona su propio audio.
+        stream.getTracks().forEach(function(track){track.stop();});
+        $('micLabel').textContent='Iniciando reconocimiento...';
+        iniciarReconocimiento();
+      }).catch(mostrarErrorPermiso);
+    });
+
+    function initVoz2(){
+      reconocimiento=new SRentrada();
+      reconocimiento.lang='es-ES';
+      reconocimiento.continuous=true;
+      reconocimiento.interimResults=false;
+      reconocimiento.onstart=function(){escuchando=true;$('mic').classList.add('listening');$('micLabel').textContent='Escuchando... pulsa para detener';$('vstatus').textContent='🎙️ Escuchando... dicta completa.';$('vstatus').classList.remove('hidden');};
+      reconocimiento.onresult=function(e){var fin='';for(var i=e.resultIndex;i<e.results.length;i++){if(e.results[i].isFinal)fin+=e.results[i][0].transcript+' ';}if(fin.trim())$('txt').value=fin.trim();};
+      reconocimiento.onerror=function(e){idle();if(e.error==='not-allowed'||e.error==='service-not-allowed'){$('vstatus').textContent='🚫 Permiso de micrófono denegado o bloqueado por el contenedor. Permítelo en el candado de la barra; si persiste, la interfaz debe abrirse desde una página HTTPS con permiso de micrófono.';}else if(e.error==='no-speech'){$('vstatus').textContent='No detecté voz. Acerca el micrófono y vuelve a intentar.';}else{$('vstatus').textContent='Error de voz: '+e.error;}$('vstatus').classList.remove('hidden');};
+      reconocimiento.onend=function(){idle();};
+    }
+    function idle(){$('mic').classList.remove('listening');escuchando=false;$('micLabel').textContent='Pulsa y dicta tu visita';}
+    // Inicializar reconocimiento
+    if(SRentrada){initVoz2();}
+
+    // ------- Parseo y guardado -------
+    $('add').addEventListener('click',function(){
+      var txt=$('txt').value.trim();
+      if(!txt){toast('Dicta o escribe algo');return;}
+      parsear(txt);
+    });
+    $('pvSave').addEventListener('click',function(){
+      if(!pending)return;
+      google.script.run.withSuccessHandler(function(d){datos=d;render();toast('✓ Guardada y añadida al calendario');$('previewCard').classList.add('hidden');$('txt').value='';pending=null;}).guardar(pending.tipo,pending.nombre,pending.fecha,pending.hora,pending.telefono,pending.direccion,'');
+    });
+    $('pvCancel').addEventListener('click',function(){$('previewCard').classList.add('hidden');pending=null;});
+
+    function parsear(txt){
+      $('vstatus').textContent='Interpretando...';$('vstatus').classList.remove('hidden');
+      google.script.run
+        .withSuccessHandler(function(p){
+          pending=p;
+          $('vstatus').classList.add('hidden');
+          var filas=[
+            {i:p.tipo==='llamada'?'📞':'🚗',l:'Tipo',v:p.tipo==='llamada'?'Llamada':'Visita'},
+            {i:'👤',l:'Cliente',v:p.nombre},
+            {i:'📅',l:'Fecha',v:fmtFechaLarga(p.fecha)},
+            {i:'🕐',l:'Hora',v:p.hora||'(sin hora específica)'},
+            {i:'📱',l:'Teléfono',v:p.telefono||''},
+            {i:'📍',l:'Dirección',v:p.direccion||''}
+          ];
+          $('pvrows').innerHTML=filas.map(function(f){return '<div class="pv-row"><span class="pv-ico">'+f.i+'</span><div class="pv-field"><label>'+f.l+'</label><div class="pv-value">'+esc(f.v)+'</div></div></div>';}).join('');
+          $('previewCard').classList.remove('hidden');
+        })
+        .interpretar(txt,'');  // Solo interpreta, NO guarda todavía
+    }
+
+    // Filtros
+    document.querySelectorAll('.fbtn').forEach(function(b){b.addEventListener('click',function(){
+      document.querySelectorAll('.fbtn').forEach(function(x){x.classList.remove('active');});
+      b.classList.add('active');filtro=b.dataset.f;renderLista();
+    });});
+
+    // Init
+    (function(){var f=new Date();f.setDate(f.getDate()+7);$('fecha').value=f.toISOString().slice(0,10);initVoz();cargar();})();
+  </script>
+</body>
+</html>
