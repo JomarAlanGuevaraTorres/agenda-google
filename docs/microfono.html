@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Dictar a la agenda</title>
+  <style>
+    body{margin:0;min-height:100vh;display:grid;place-items:center;background:#eef1ff;font-family:system-ui,sans-serif;color:#1f2937}
+    main{max-width:360px;padding:32px;text-align:center}.mic{font-size:54px}h1{font-size:1.35rem}p{line-height:1.45}button{border:0;border-radius:24px;background:#4f6df5;color:#fff;padding:15px 24px;font-weight:700;font-size:1rem;cursor:pointer}button:disabled{opacity:.65}#estado{min-height:3em;margin:18px 0;color:#334155}.error{color:#b91c1c}
+  </style>
+</head>
+<body>
+  <main>
+    <div class="mic">🎙️</div><h1>Dictar a la agenda</h1>
+    <p>Al terminar, el texto volverá automáticamente a la agenda.</p>
+    <button id="dictar" type="button">Comenzar dictado</button>
+    <p id="estado" aria-live="polite">Pulsa el botón para permitir el micrófono.</p>
+  </main>
+  <script>
+    const ORIGEN_ESPERADO='https://jomaralanguevaratorres.github.io';
+    const boton=document.getElementById('dictar'),estado=document.getElementById('estado');
+    function informar(texto,error){estado.textContent=texto;estado.className=error?'error':'';}
+    function devolver(tipo,datos){if(window.opener)window.opener.postMessage(Object.assign({tipo:tipo},datos||{}),'*');}
+    function terminar(){boton.disabled=false;boton.textContent='Comenzar dictado';}
+    function fallo(err){const nombre=err&&err.name?err.name:'Error de voz',mensaje=err&&err.message?err.message:'';informar('No se pudo usar el micrófono: '+nombre+(mensaje?' — '+mensaje:''),true);devolver('agenda-voz-error',{nombre:nombre,mensaje:mensaje});terminar();}
+    boton.addEventListener('click',function(){
+      const Reconocimiento=window.SpeechRecognition||window.webkitSpeechRecognition;
+      if(!window.opener){fallo({name:'Sin agenda',message:'Abre esta ventana desde el botón de la agenda.'});return;}
+      if(!window.isSecureContext||!Reconocimiento||!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){fallo({name:'No compatible',message:'Usa Chrome o Safari desde la página publicada por HTTPS.'});return;}
+      boton.disabled=true;boton.textContent='Solicitando permiso…';informar('Cuando el navegador lo pida, pulsa “Permitir”.');
+      navigator.mediaDevices.getUserMedia({audio:true}).then(function(stream){
+        stream.getTracks().forEach(function(track){track.stop();});
+        const reconocimiento=new Reconocimiento();reconocimiento.lang='es-ES';reconocimiento.continuous=false;reconocimiento.interimResults=false;
+        reconocimiento.onstart=function(){boton.textContent='Escuchando…';informar('Habla ahora.');};
+        reconocimiento.onresult=function(event){let texto='';for(let i=event.resultIndex;i<event.results.length;i++){if(event.results[i].isFinal)texto+=event.results[i][0].transcript+' ';}texto=texto.trim();if(texto){devolver('agenda-voz-resultado',{texto:texto});informar('✓ Dictado enviado a la agenda.');setTimeout(function(){window.close();},700);}};
+        reconocimiento.onerror=function(event){fallo({name:event.error,message:'El reconocimiento no pudo completarse.'});};
+        reconocimiento.onend=terminar;try{reconocimiento.start();}catch(err){fallo(err);}
+      }).catch(fallo);
+    });
+  </script>
+</body>
+</html>

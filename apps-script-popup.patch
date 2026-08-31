@@ -1,0 +1,89 @@
+diff --git a/Code.gs b/Code.gs
+index 27e90d7..42f8420 100644
+--- a/Code.gs
++++ b/Code.gs
+@@ -18,8 +18,7 @@
+ function doGet() {
+   return HtmlService.createHtmlOutputFromFile('Index')
+     .setTitle('Agenda Inteligente de Clientes')
+-    .addMetaTag('viewport', 'width=device-width, initial-scale=1, maximum-scale=1')
+-    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
++    .addMetaTag('viewport', 'width=device-width, initial-scale=1, maximum-scale=1');
+ }
+ 
+ /* ============ CONFIGURACIÓN DE LA HOJA ============ */
+diff --git a/Index.html b/Index.html
+index 71bd9aa..5c085fd 100644
+--- a/Index.html
++++ b/Index.html
+@@ -141,7 +141,6 @@
+     var filtro = 'todas';
+     var reconocimiento = null;
+     var escuchando = false;
+-    var puenteVozActivo = false;
+ 
+     function $(id){return document.getElementById(id);}
+     function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(m){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m];});}
+@@ -254,12 +253,11 @@
+ 
+     // ------- Voz -------
+     var SRentrada = window.SpeechRecognition||window.webkitSpeechRecognition;
++    var URL_VENTANA_VOZ='https://jomaralanguevaratorres.github.io/agenda-google/microfono.html';
+     window.addEventListener('message',function(event){
+-      if(event.source!==window.top) return;
++      if(event.origin!=='https://jomaralanguevaratorres.github.io') return;
+       var data=event.data||{};
+-      if(data.tipo==='agenda-voz-puente-conectado'){
+-        puenteVozActivo=true;
+-      }else if(data.tipo==='agenda-voz-resultado'){
++      if(data.tipo==='agenda-voz-resultado'){
+         if(typeof data.texto==='string'&&data.texto.trim()){
+           $('txt').value=data.texto.trim();
+           $('vstatus').textContent='✓ Dictado recibido. Revisa el texto y pulsa “Interpretar / guardar”.';
+@@ -270,7 +268,6 @@
+         mostrarErrorPermiso({name:data.nombre||'Error de voz',message:data.mensaje||''});
+       }
+     });
+-    if(window.top!==window.self) window.top.postMessage({tipo:'agenda-voz-puente-listo'},'*');
+ 
+     function initVoz(){
+       if(!SRentrada){
+@@ -307,34 +304,14 @@
+     $('mic').addEventListener('click',function(){
+       if(!SRentrada) return;
+       if(escuchando){try{reconocimiento.stop();}catch(e){}idle();return;}
+-      if(puenteVozActivo){
+-        $('vstatus').textContent='Para dictar usa el botón “🎙️ Dictar” de la barra superior.';
++      var ventana=window.open(URL_VENTANA_VOZ,'agenda-voz','width=460,height=520');
++      if(!ventana){
++        $('vstatus').textContent='El navegador bloqueó la ventana de voz. Permite ventanas emergentes para esta agenda e inténtalo otra vez.';
+         $('vstatus').classList.remove('hidden');
+         return;
+       }
+-      $('mic').classList.add('listening');
+-      $('micLabel').textContent='Solicitando acceso al micrófono...';
+-      $('vstatus').textContent='🎙️ Cuando el navegador lo pida, pulsa "Permitir".';
++      $('vstatus').textContent='Se abrió la ventana de voz. Pulsa “Comenzar dictado” allí.';
+       $('vstatus').classList.remove('hidden');
+-      escuchando=true;
+-
+-      // Pedir el permiso explícitamente durante el clic. SpeechRecognition por sí
+-      // solo no siempre muestra el aviso del navegador, especialmente en iframes.
+-      if(!window.isSecureContext){
+-        mostrarErrorPermiso({name:'SecurityError',message:'La página no está en un contexto seguro (HTTPS).'});
+-        return;
+-      }
+-      if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){
+-        // Compatibilidad: algunos navegadores exponen SpeechRecognition sin MediaDevices.
+-        iniciarReconocimiento();
+-        return;
+-      }
+-      navigator.mediaDevices.getUserMedia({audio:true}).then(function(stream){
+-        // Solo se usa para obtener el permiso; el reconocimiento gestiona su propio audio.
+-        stream.getTracks().forEach(function(track){track.stop();});
+-        $('micLabel').textContent='Iniciando reconocimiento...';
+-        iniciarReconocimiento();
+-      }).catch(mostrarErrorPermiso);
+     });
+ 
+     function initVoz2(){
